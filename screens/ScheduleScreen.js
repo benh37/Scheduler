@@ -1,12 +1,17 @@
 import React, { useContext, useState, useEffect } from 'react';
 import CourseList from '../components/CourseList';
 import { SafeAreaView, StyleSheet, Text } from 'react-native';
-import CourseEditScreen from './CourseEditScreen';
 import UserContext from '../components/UserContext';
+import { firebase } from "../utils/firebase";
   
 const Banner = ({title}) => (
   <Text style={styles.bannerStyle}>{title || '[loading...]'}</Text>
 );
+
+const fixCourses = json => ({
+  ...json,
+  courses: Object.values(json.courses)
+});
 
 const ScheduleScreen = ({navigation}) => {
   const user = useContext(UserContext);
@@ -17,6 +22,15 @@ const ScheduleScreen = ({navigation}) => {
   const view = (course) => {
     navigation.navigate(canEdit ? 'CourseEditScreen' : 'CourseDetailScreen', { course });
   };
+  
+  useEffect(() => {
+    const db = firebase.database().ref();
+    const handleData = snap => {
+      if (snap.val()) setSchedule(fixCourses(snap.val()));
+    }
+    db.on('value', handleData, error => alert(error));
+    return () => { db.off('value', handleData); };
+  }, []);
   
   const url = 'https://courses.cs.northwestern.edu/394/data/cs-courses.php';
 
